@@ -24,51 +24,54 @@ All RPC responses are wrapped in the generic `RPCReplyMsg` structure:
 }
 ```
 
+## Authentication
+
+All RPC messages are authenticated using cryptographic signatures. The signature is created using the caller's private key and verified by the server using ECDSA signature recovery. The system supports four types of private keys:
+
+- **Server Owner Key**: Controls server-level operations
+- **Colony Owner Key**: Controls colony administration operations
+- **Executor Key**: Used by executors for process execution
+- **User Key**: Used by users for submitting work and accessing resources
+
 ## Colony Operations
 
 Operations for managing colonies (distributed runtime environments).
 
 ### Add Colony
 - **PayloadType**: `addcolonymsg`
-- **Struct**: `AddColonyMsg`
+- **Credentials**: Server Owner Private Key
 - **Required Fields**:
   - `colony` (*core.Colony): Colony object to add
-  - `msgtype` (string): Message type identifier
 
 ### Get Colony
 - **PayloadType**: `getcolonymsg`
-- **Struct**: `GetColonyMsg`
+- **Credentials**: Executor or User Private Key
 - **Required Fields**:
   - `colonyname` (string): Name of the colony to retrieve
-  - `msgtype` (string): Message type identifier
 
 ### Get Colonies
 - **PayloadType**: `getcoloniesmsg`
-- **Struct**: `GetColoniesMsg`
-- **Required Fields**:
-  - `msgtype` (string): Message type identifier
+- **Credentials**: Server Owner Private Key
+- **Required Fields**: None
 
 ### Remove Colony
 - **PayloadType**: `removecolonymsg`
-- **Struct**: `RemoveColonyMsg`
+- **Credentials**: Server Owner Private Key
 - **Required Fields**:
   - `colonyname` (string): Name of the colony to remove
-  - `msgtype` (string): Message type identifier
 
 ### Change Colony ID
 - **PayloadType**: `changecolonyidmsg`
-- **Struct**: `ChangeColonyIDMsg`
+- **Credentials**: Server Owner Private Key
 - **Required Fields**:
   - `colonyname` (string): Name of the colony
   - `colonyid` (string): New colony ID
-  - `msgtype` (string): Message type identifier
 
 ### Get Colony Statistics
 - **PayloadType**: `getcolonystatsmsg`
-- **Struct**: `GetColonyStatisticsMsg`
+- **Credentials**: Executor or User Private Key (colony member)
 - **Required Fields**:
   - `colonyname` (string): Name of the colony
-  - `msgtype` (string): Message type identifier
 
 ## Executor Operations
 
@@ -76,74 +79,65 @@ Operations for managing executors (distributed workers that execute processes).
 
 ### Add Executor
 - **PayloadType**: `addexecutormsg`
-- **Struct**: `AddExecutorMsg`
+- **Credentials**: Colony Owner Private Key
 - **Required Fields**:
   - `executor` (*core.Executor): Executor object to add
-  - `msgtype` (string): Message type identifier
 
 ### Get Executor
 - **PayloadType**: `getexecutormsg`
-- **Struct**: `GetExecutorMsg`
+- **Credentials**: Executor or User Private Key (colony member)
 - **Required Fields**:
   - `colonyname` (string): Name of the colony
   - `executorname` (string): Name of the executor
-  - `msgtype` (string): Message type identifier
 
 ### Get Executors
 - **PayloadType**: `getexecutorsmsg`
-- **Struct**: `GetExecutorsMsg`
+- **Credentials**: Executor or User Private Key (colony member)
 - **Required Fields**:
   - `colonyname` (string): Name of the colony
-  - `msgtype` (string): Message type identifier
 
 ### Get Executor By ID
 - **PayloadType**: `getexecutorbyidmsg`
-- **Struct**: `GetExecutorByIDMsg`
+- **Credentials**: Executor or User Private Key (colony member)
 - **Required Fields**:
   - `colonyname` (string): Name of the colony
   - `executorid` (string): ID of the executor
-  - `msgtype` (string): Message type identifier
 
 ### Approve Executor
 - **PayloadType**: `approveexecutormsg`
-- **Struct**: `ApproveExecutorRPC`
+- **Credentials**: Colony Owner Private Key
 - **Required Fields**:
   - `colonyname` (string): Name of the colony
   - `executorname` (string): Name of the executor to approve
-  - `msgtype` (string): Message type identifier
 
 ### Reject Executor
 - **PayloadType**: `rejectexecutormsg`
-- **Struct**: `RejectExecutorMsg`
+- **Credentials**: Colony Owner Private Key
 - **Required Fields**:
   - `colonyname` (string): Name of the colony
   - `executorname` (string): Name of the executor to reject
-  - `msgtype` (string): Message type identifier
 
 ### Remove Executor
 - **PayloadType**: `removeexecutormsg`
-- **Struct**: `RemoveExecutorMsg`
+- **Credentials**: Colony Owner Private Key
 - **Required Fields**:
   - `colonyname` (string): Name of the colony
   - `executorname` (string): Name of the executor to remove
-  - `msgtype` (string): Message type identifier
 
 ### Change Executor ID
 - **PayloadType**: `changeexecutoridmsg`
-- **Struct**: `ChangeExecutorIDMsg`
+- **Credentials**: Executor Private Key (self-update only)
 - **Required Fields**:
   - `colonyname` (string): Name of the colony
   - `executorid` (string): New executor ID
-  - `msgtype` (string): Message type identifier
 
 ### Report Allocations
 - **PayloadType**: `reportallocationmsg`
-- **Struct**: `ReportAllocationsMsg`
+- **Credentials**: Executor Private Key (approved)
 - **Required Fields**:
   - `colonyname` (string): Name of the colony
   - `executorname` (string): Name of the executor
   - `allocations` (core.Allocations): Resource allocation information
-  - `msgtype` (string): Message type identifier
 
 ## Process Operations
 
@@ -151,47 +145,42 @@ Operations for managing processes (computational workloads).
 
 ### Submit Function Spec
 - **PayloadType**: `submitfuncspecmsg`
-- **Struct**: `SubmitFunctionSpecMsg`
+- **Credentials**: Executor or User Private Key (approved colony member)
 - **Required Fields**:
   - `spec` (*core.FunctionSpec): Function specification to submit
-  - `msgtype` (string): Message type identifier
 
 ### Assign Process
 - **PayloadType**: `assignprocessmsg`
-- **Struct**: `AssignProcessMsg`
+- **Credentials**: Executor Private Key (approved)
 - **Required Fields**:
   - `colonyname` (string): Name of the colony
   - `timeout` (int): Timeout in seconds
   - `availablecpu` (string): Available CPU resources
   - `availablememory` (string): Available memory resources
-  - `msgtype` (string): Message type identifier
 
 ### Close Successful
 - **PayloadType**: `closesuccessfulmsg`
-- **Struct**: `CloseSuccessfulMsg`
+- **Credentials**: Executor Private Key (must be assigned to the process)
 - **Required Fields**:
   - `processid` (string): ID of the process
   - `output` ([]interface{}): Process output data
-  - `msgtype` (string): Message type identifier
 
 ### Close Failed
 - **PayloadType**: `closefailedmsg`
-- **Struct**: `CloseFailedMsg`
+- **Credentials**: Executor Private Key (must be assigned to the process)
 - **Required Fields**:
   - `processid` (string): ID of the process
   - `errors` ([]string): Error messages
-  - `msgtype` (string): Message type identifier
 
 ### Get Process
 - **PayloadType**: `getprocessmsg`
-- **Struct**: `GetProcessMsg`
+- **Credentials**: Executor or User Private Key (colony member)
 - **Required Fields**:
   - `processid` (string): ID of the process
-  - `msgtype` (string): Message type identifier
 
 ### Get Processes
 - **PayloadType**: `getprocessesmsg`
-- **Struct**: `GetProcessesMsg`
+- **Credentials**: Executor or User Private Key (colony member)
 - **Required Fields**:
   - `colonyname` (string): Name of the colony
   - `count` (int): Number of processes to retrieve
@@ -199,126 +188,111 @@ Operations for managing processes (computational workloads).
   - `executortype` (string): Executor type filter
   - `label` (string): Label filter
   - `initiator` (string): Initiator filter
-  - `msgtype` (string): Message type identifier
 
 ### Remove Process
 - **PayloadType**: `removeprocessmsg`
-- **Struct**: `RemoveProcessMsg`
+- **Credentials**: Executor or User Private Key (colony member)
 - **Required Fields**:
   - `processid` (string): ID of the process to remove
   - `all` (bool): Remove all related processes
-  - `msgtype` (string): Message type identifier
 
 ### Remove All Processes
 - **PayloadType**: `removeallprocessesmsg`
-- **Struct**: `RemoveAllProcessesMsg`
+- **Credentials**: Colony Owner Private Key
 - **Required Fields**:
   - `colonyname` (string): Name of the colony
   - `state` (int): State filter for processes to remove
-  - `msgtype` (string): Message type identifier
 
 ### Set Output
 - **PayloadType**: `setoutputmsg`
-- **Struct**: `SetOutputMsg`
+- **Credentials**: Executor Private Key (must be assigned to the process)
 - **Required Fields**:
   - `processid` (string): ID of the process
   - `output` ([]interface{}): Output data to set
-  - `msgtype` (string): Message type identifier
 
 ### Add Child
 - **PayloadType**: `addchildmsg`
-- **Struct**: `AddChildMsg`
+- **Credentials**: Executor Private Key (must be assigned to parent process)
 - **Required Fields**:
   - `processgraphid` (string): ID of the process graph
   - `parentprocessid` (string): ID of the parent process
   - `childprocessid` (string): ID of the child process
   - `spec` (*core.FunctionSpec): Function specification for the child
   - `insert` (bool): Whether to insert the child
-  - `msgtype` (string): Message type identifier
 
 ### Subscribe Process
 - **PayloadType**: `subscribeprocessmsg`
-- **Struct**: `SubscribeProcessMsg`
+- **Credentials**: Executor or User Private Key (colony member)
 - **Required Fields**:
   - `colonyname` (string): Name of the colony
   - `processid` (string): ID of the process to subscribe to
   - `executortype` (string): Executor type filter
   - `state` (int): State filter
   - `timeout` (int): Subscription timeout
-  - `msgtype` (string): Message type identifier
 
 ### Subscribe Processes
 - **PayloadType**: `subscribeprocessesmsg`
-- **Struct**: `SubscribeProcessesMsg`
+- **Credentials**: Executor or User Private Key (colony member)
 - **Required Fields**:
   - `colonyname` (string): Name of the colony
   - `executortype` (string): Executor type filter
   - `state` (int): State filter
   - `timeout` (int): Subscription timeout
-  - `msgtype` (string): Message type identifier
 
 ### Get Process Graph
 - **PayloadType**: `getprocessgraphmsg`
-- **Struct**: `GetProcessGraphMsg`
+- **Credentials**: Executor or User Private Key (colony member)
 - **Required Fields**:
   - `processgraphid` (string): ID of the process graph
-  - `msgtype` (string): Message type identifier
 
 ### Get Process Graphs
 - **PayloadType**: `getprocessgraphsmsg`
-- **Struct**: `GetProcessGraphsMsg`
+- **Credentials**: Executor or User Private Key (colony member)
 - **Required Fields**:
   - `colonyname` (string): Name of the colony
   - `count` (int): Number of graphs to retrieve
   - `state` (int): State filter
-  - `msgtype` (string): Message type identifier
 
 ### Remove Process Graph
 - **PayloadType**: `removeprocessgraphmsg`
-- **Struct**: `RemoveProcessGraphMsg`
+- **Credentials**: Executor or User Private Key (colony member)
 - **Required Fields**:
   - `processgraphid` (string): ID of the process graph to remove
   - `all` (bool): Remove all related graphs
-  - `msgtype` (string): Message type identifier
 
 ### Remove All Process Graphs
 - **PayloadType**: `removeallprocessgraphsmsg`
-- **Struct**: `RemoveAllProcessGraphsMsg`
+- **Credentials**: Colony Owner Private Key
 - **Required Fields**:
   - `colonyname` (string): Name of the colony
   - `state` (int): State filter for graphs to remove
-  - `msgtype` (string): Message type identifier
 
 ### Get Process History
 - **PayloadType**: `getprocesshistmsg`
-- **Struct**: `GetProcessHistMsg`
+- **Credentials**: Executor or User Private Key (colony member)
 - **Required Fields**:
   - `colonyname` (string): Name of the colony
   - `executorid` (string): ID of the executor
   - `seconds` (int): Time range in seconds
   - `state` (int): State filter
-  - `msgtype` (string): Message type identifier
 
 ### Pause Assignments
 - **PayloadType**: `pauseassignmentsmsg`
-- **Struct**: `PauseAssignmentsMsg`
+- **Credentials**: Colony Owner Private Key
 - **Required Fields**:
   - `colonyname` (string): Name of the colony
-  - `msgtype` (string): Message type identifier
 
 ### Resume Assignments
 - **PayloadType**: `resumeassignmentsmsg`
-- **Struct**: `ResumeAssignmentsMsg`
+- **Credentials**: Colony Owner Private Key
 - **Required Fields**:
   - `colonyname` (string): Name of the colony
-  - `msgtype` (string): Message type identifier
 
 ### Get Pause Status
 - **PayloadType**: `getpausestatusmsg`
-- **Struct**: `GetPauseStatusMsg`
+- **Credentials**: Executor or User Private Key (colony member)
 - **Required Fields**:
   - `colonyname` (string): Name of the colony
-  - `msgtype` (string): Message type identifier
 
 ## Function Operations
 
@@ -326,25 +300,22 @@ Operations for managing executor functions (capabilities offered by executors).
 
 ### Add Function
 - **PayloadType**: `addfunctionmsg`
-- **Struct**: `AddFunctionMsg`
+- **Credentials**: Executor Private Key (approved)
 - **Required Fields**:
   - `function` (*core.Function): Function object to add
-  - `msgtype` (string): Message type identifier
 
 ### Get Functions
 - **PayloadType**: `getfunctionsmsg`
-- **Struct**: `GetFunctionsMsg`
+- **Credentials**: Executor or User Private Key (colony member)
 - **Required Fields**:
   - `executorname` (string): Name of the executor
   - `colonyname` (string): Name of the colony
-  - `msgtype` (string): Message type identifier
 
 ### Remove Function
 - **PayloadType**: `removefunctionmsg`
-- **Struct**: `RemoveFunctionMsg`
+- **Credentials**: Executor Private Key (approved)
 - **Required Fields**:
   - `functionid` (string): ID of the function to remove
-  - `msgtype` (string): Message type identifier
 
 ## File Operations
 
@@ -352,48 +323,43 @@ Operations for managing files in the distributed file system.
 
 ### Add File
 - **PayloadType**: `addfilemsg`
-- **Struct**: `AddFileMsg`
+- **Credentials**: Executor or User Private Key (approved colony member)
 - **Required Fields**:
   - `file` (*core.File): File object to add
-  - `msgtype` (string): Message type identifier
 
 ### Get File
 - **PayloadType**: `getfilemsg`
-- **Struct**: `GetFileMsg`
+- **Credentials**: Executor or User Private Key (colony member)
 - **Required Fields**:
   - `colonyname` (string): Name of the colony
   - `fileid` (string): ID of the file
   - `label` (string): Label filter
   - `name` (string): Name filter
   - `latest` (bool): Retrieve latest version
-  - `msgtype` (string): Message type identifier
 
 ### Get Files
 - **PayloadType**: `getfilesmsg`
-- **Struct**: `GetFilesMsg`
+- **Credentials**: Executor or User Private Key (colony member)
 - **Required Fields**:
   - `label` (string): Label filter
   - `colonyname` (string): Name of the colony
-  - `msgtype` (string): Message type identifier
 
 ### Remove File
 - **PayloadType**: `removefilemsg`
-- **Struct**: `RemoveFileMsg`
+- **Credentials**: Executor or User Private Key (approved colony member)
 - **Required Fields**:
   - `colonyname` (string): Name of the colony
   - `fileid` (string): ID of the file
   - `label` (string): Label filter
   - `name` (string): Name filter
-  - `msgtype` (string): Message type identifier
 
 ### Get File Labels
 - **PayloadType**: `getfilelabelsmsg`
-- **Struct**: `GetFileLabelsMsg`
+- **Credentials**: Executor or User Private Key (colony member)
 - **Required Fields**:
   - `colonyname` (string): Name of the colony
   - `name` (string): Name filter
   - `exact` (bool): Exact match flag
-  - `msgtype` (string): Message type identifier
 
 ## Cron Operations
 
@@ -401,40 +367,35 @@ Operations for managing scheduled jobs (cron-like functionality).
 
 ### Add Cron
 - **PayloadType**: `addcronmsg`
-- **Struct**: `AddCronMsg`
+- **Credentials**: Executor or User Private Key (approved colony member)
 - **Required Fields**:
   - `cron` (*core.Cron): Cron object to add
-  - `msgtype` (string): Message type identifier
 
 ### Get Cron
 - **PayloadType**: `getcronmsg`
-- **Struct**: `GetCronMsg`
+- **Credentials**: Executor or User Private Key (colony member)
 - **Required Fields**:
   - `cronid` (string): ID of the cron job
-  - `msgtype` (string): Message type identifier
 
 ### Get Crons
 - **PayloadType**: `getcronsmsg`
-- **Struct**: `GetCronsMsg`
+- **Credentials**: Executor or User Private Key (colony member)
 - **Required Fields**:
   - `colonyname` (string): Name of the colony
   - `count` (int): Number of crons to retrieve
-  - `msgtype` (string): Message type identifier
 
 ### Remove Cron
 - **PayloadType**: `removecronmsg`
-- **Struct**: `RemoveCronMsg`
+- **Credentials**: Executor or User Private Key (approved colony member)
 - **Required Fields**:
   - `cronid` (string): ID of the cron job to remove
   - `all` (bool): Remove all related crons
-  - `msgtype` (string): Message type identifier
 
 ### Run Cron
 - **PayloadType**: `runcronmsg`
-- **Struct**: `RunCronMsg`
+- **Credentials**: Executor or User Private Key (approved colony member)
 - **Required Fields**:
   - `cronid` (string): ID of the cron job to run
-  - `msgtype` (string): Message type identifier
 
 ## Generator Operations
 
@@ -442,49 +403,43 @@ Operations for managing process generators (dynamic process creation).
 
 ### Add Generator
 - **PayloadType**: `addgeneratormsg`
-- **Struct**: `AddGeneratorMsg`
+- **Credentials**: Executor or User Private Key (approved colony member)
 - **Required Fields**:
   - `generator` (*core.Generator): Generator object to add
-  - `msgtype` (string): Message type identifier
 
 ### Get Generator
 - **PayloadType**: `getgeneratormsg`
-- **Struct**: `GetGeneratorMsg`
+- **Credentials**: Executor or User Private Key (colony member)
 - **Required Fields**:
   - `generatorid` (string): ID of the generator
-  - `msgtype` (string): Message type identifier
 
 ### Get Generators
 - **PayloadType**: `getgeneratorsmsg`
-- **Struct**: `GetGeneratorsMsg`
+- **Credentials**: Executor or User Private Key (colony member)
 - **Required Fields**:
   - `colonyname` (string): Name of the colony
   - `count` (int): Number of generators to retrieve
-  - `msgtype` (string): Message type identifier
 
 ### Remove Generator
 - **PayloadType**: `removegeneratormsg`
-- **Struct**: `RemoveGeneratorMsg`
+- **Credentials**: Executor or User Private Key (approved colony member)
 - **Required Fields**:
   - `generatorid` (string): ID of the generator to remove
   - `all` (bool): Remove all related generators
-  - `msgtype` (string): Message type identifier
 
 ### Resolve Generator
 - **PayloadType**: `resolvegeneratormsg`
-- **Struct**: `ResolveGeneratorMsg`
+- **Credentials**: Executor or User Private Key (colony member)
 - **Required Fields**:
   - `colonyname` (string): Name of the colony
   - `generatorname` (string): Name of the generator
-  - `msgtype` (string): Message type identifier
 
 ### Pack Generator
 - **PayloadType**: `packgeneratormsg`
-- **Struct**: `PackGeneratorMsg`
+- **Credentials**: Executor or User Private Key (colony member)
 - **Required Fields**:
   - `generatorid` (string): ID of the generator
   - `arg` (string): Argument to pack
-  - `msgtype` (string): Message type identifier
 
 ## Blueprint Operations
 
@@ -492,79 +447,69 @@ Operations for managing blueprints (infrastructure as code definitions).
 
 ### Add Blueprint
 - **PayloadType**: `addblueprintmsg`
-- **Struct**: `AddBlueprintMsg`
+- **Credentials**: Colony Owner Private Key
 - **Required Fields**:
   - `blueprint` (*core.Blueprint): Blueprint object to add
-  - `msgtype` (string): Message type identifier
 
 ### Add Blueprint Definition
 - **PayloadType**: `addblueprintdefinitionmsg`
-- **Struct**: `AddBlueprintDefinitionMsg`
+- **Credentials**: Colony Owner Private Key
 - **Required Fields**:
   - `blueprintdefinition` (*core.BlueprintDefinition): Blueprint definition to add
-  - `msgtype` (string): Message type identifier
 
 ### Get Blueprint
 - **PayloadType**: `getblueprintmsg`
-- **Struct**: `GetBlueprintMsg`
+- **Credentials**: Executor or User Private Key (colony member)
 - **Required Fields**:
   - `namespace` (string): Blueprint namespace
   - `name` (string): Blueprint name
-  - `msgtype` (string): Message type identifier
 
 ### Get Blueprints
 - **PayloadType**: `getblueprintsmsg`
-- **Struct**: `GetBlueprintsMsg`
+- **Credentials**: Executor or User Private Key (colony member)
 - **Required Fields**:
   - `namespace` (string): Blueprint namespace filter
   - `kind` (string): Blueprint kind filter
-  - `msgtype` (string): Message type identifier
 
 ### Get Blueprint Definition
 - **PayloadType**: `getblueprintdefinitionmsg`
-- **Struct**: `GetBlueprintDefinitionMsg`
+- **Credentials**: Executor or User Private Key (colony member)
 - **Required Fields**:
   - `colonyname` (string): Name of the colony
   - `name` (string): Definition name
-  - `msgtype` (string): Message type identifier
 
 ### Get Blueprint Definitions
 - **PayloadType**: `getblueprintdefinitionsmsg`
-- **Struct**: `GetBlueprintDefinitionsMsg`
+- **Credentials**: Executor or User Private Key (colony member)
 - **Required Fields**:
   - `colonyname` (string): Name of the colony
-  - `msgtype` (string): Message type identifier
 
 ### Get Blueprint History
 - **PayloadType**: `getblueprinthistorymsg`
-- **Struct**: `GetBlueprintHistoryMsg`
+- **Credentials**: Executor or User Private Key (colony member)
 - **Required Fields**:
   - `blueprintid` (string): ID of the blueprint
   - `limit` (int): Maximum number of history entries
-  - `msgtype` (string): Message type identifier
 
 ### Remove Blueprint
 - **PayloadType**: `removeblueprintmsg`
-- **Struct**: `RemoveBlueprintMsg`
+- **Credentials**: Colony Owner Private Key
 - **Required Fields**:
   - `namespace` (string): Blueprint namespace
   - `name` (string): Blueprint name
-  - `msgtype` (string): Message type identifier
 
 ### Remove Blueprint Definition
 - **PayloadType**: `removeblueprintdefinitionmsg`
-- **Struct**: `RemoveBlueprintDefinitionMsg`
+- **Credentials**: Colony Owner Private Key
 - **Required Fields**:
   - `namespace` (string): Definition namespace
   - `name` (string): Definition name
-  - `msgtype` (string): Message type identifier
 
 ### Update Blueprint
 - **PayloadType**: `updateblueprintmsg`
-- **Struct**: `UpdateBlueprintMsg`
+- **Credentials**: Colony Owner Private Key
 - **Required Fields**:
   - `blueprint` (*core.Blueprint): Updated blueprint object
-  - `msgtype` (string): Message type identifier
 
 ## Node Operations
 
@@ -572,26 +517,23 @@ Operations for managing nodes in the distributed system.
 
 ### Get Node
 - **PayloadType**: `getnodemsg`
-- **Struct**: `GetNodeMsg`
+- **Credentials**: Executor or User Private Key (colony member)
 - **Required Fields**:
   - `colonyname` (string): Name of the colony
   - `nodename` (string): Name of the node
-  - `msgtype` (string): Message type identifier
 
 ### Get Nodes
 - **PayloadType**: `getnodesmsg`
-- **Struct**: `GetNodesMsg`
+- **Credentials**: Executor or User Private Key (colony member)
 - **Required Fields**:
   - `colonyname` (string): Name of the colony
-  - `msgtype` (string): Message type identifier
 
 ### Get Nodes By Location
 - **PayloadType**: `getnodesbylocationmsg`
-- **Struct**: `GetNodesByLocationMsg`
+- **Credentials**: Executor or User Private Key (colony member)
 - **Required Fields**:
   - `colonyname` (string): Name of the colony
   - `location` (string): Location filter
-  - `msgtype` (string): Message type identifier
 
 ## User Operations
 
@@ -599,49 +541,43 @@ Operations for managing users and authentication.
 
 ### Add User
 - **PayloadType**: `addusermsg`
-- **Struct**: `AddUserMsg`
+- **Credentials**: Colony Owner Private Key
 - **Required Fields**:
   - `user` (*core.User): User object to add
-  - `msgtype` (string): Message type identifier
 
 ### Get User
 - **PayloadType**: `getusermsg`
-- **Struct**: `GetUserMsg`
+- **Credentials**: Executor or User Private Key (colony member)
 - **Required Fields**:
   - `colonyname` (string): Name of the colony
   - `name` (string): Username
-  - `msgtype` (string): Message type identifier
 
 ### Get User By ID
 - **PayloadType**: `getuserbyidmsg`
-- **Struct**: `GetUserByIDMsg`
+- **Credentials**: Executor or User Private Key (colony member)
 - **Required Fields**:
   - `colonyname` (string): Name of the colony
   - `userid` (string): ID of the user
-  - `msgtype` (string): Message type identifier
 
 ### Get Users
 - **PayloadType**: `getusersmsg`
-- **Struct**: `GetUsersMsg`
+- **Credentials**: Executor or User Private Key (colony member)
 - **Required Fields**:
   - `colonyname` (string): Name of the colony
-  - `msgtype` (string): Message type identifier
 
 ### Remove User
 - **PayloadType**: `removeusermsg`
-- **Struct**: `RemoveUserMsg`
+- **Credentials**: Colony Owner Private Key
 - **Required Fields**:
   - `colonyname` (string): Name of the colony
   - `name` (string): Username to remove
-  - `msgtype` (string): Message type identifier
 
 ### Change User ID
 - **PayloadType**: `changeuseridmsg`
-- **Struct**: `ChangeUserIDMsg`
+- **Credentials**: User Private Key (self-update only)
 - **Required Fields**:
   - `colonyname` (string): Name of the colony
   - `userid` (string): New user ID
-  - `msgtype` (string): Message type identifier
 
 ## Attribute Operations
 
@@ -649,17 +585,15 @@ Operations for managing custom attributes.
 
 ### Add Attribute
 - **PayloadType**: `addattributemsg`
-- **Struct**: `AddAttributeMsg`
+- **Credentials**: Executor or User Private Key (approved colony member)
 - **Required Fields**:
   - `attribute` (core.Attribute): Attribute object to add
-  - `msgtype` (string): Message type identifier
 
 ### Get Attribute
 - **PayloadType**: `getattributemsg`
-- **Struct**: `GetAttributeMsg`
+- **Credentials**: Executor or User Private Key (colony member)
 - **Required Fields**:
   - `attributeid` (string): ID of the attribute
-  - `msgtype` (string): Message type identifier
 
 ## Log Operations
 
@@ -667,32 +601,29 @@ Operations for managing process logs.
 
 ### Add Log
 - **PayloadType**: `addlogmsg`
-- **Struct**: `AddLogMsg`
+- **Credentials**: Executor or User Private Key (approved colony member)
 - **Required Fields**:
   - `processid` (string): ID of the process
   - `message` (string): Log message
-  - `msgtype` (string): Message type identifier
 
 ### Get Logs
 - **PayloadType**: `getlogsmsg`
-- **Struct**: `GetLogsMsg`
+- **Credentials**: Executor or User Private Key (colony member)
 - **Required Fields**:
   - `colonyname` (string): Name of the colony
   - `processid` (string): ID of the process
   - `executorname` (string): Name of the executor
   - `count` (int): Number of logs to retrieve
   - `since` (int64): Timestamp filter
-  - `msgtype` (string): Message type identifier
 
 ### Search Logs
 - **PayloadType**: `searchlogsmsg`
-- **Struct**: `SearchLogsMsg`
+- **Credentials**: Executor or User Private Key (colony member)
 - **Required Fields**:
   - `colonyname` (string): Name of the colony
   - `text` (string): Search text
   - `days` (int): Number of days to search
   - `count` (int): Maximum number of results
-  - `msgtype` (string): Message type identifier
 
 ## Snapshot Operations
 
@@ -700,44 +631,39 @@ Operations for managing file system snapshots.
 
 ### Create Snapshot
 - **PayloadType**: `createsnapshotmsg`
-- **Struct**: `CreateSnapshotMsg`
+- **Credentials**: Executor or User Private Key (approved colony member)
 - **Required Fields**:
   - `colonyname` (string): Name of the colony
   - `label` (string): Snapshot label
   - `name` (string): Snapshot name
-  - `msgtype` (string): Message type identifier
 
 ### Get Snapshot
 - **PayloadType**: `getsnapshotmsg`
-- **Struct**: `GetSnapshotMsg`
+- **Credentials**: Executor or User Private Key (colony member)
 - **Required Fields**:
   - `colonyname` (string): Name of the colony
   - `snapshotid` (string): ID of the snapshot
   - `name` (string): Snapshot name
-  - `msgtype` (string): Message type identifier
 
 ### Get Snapshots
 - **PayloadType**: `getsnapshotsmsg`
-- **Struct**: `GetSnapshotsMsg`
+- **Credentials**: Executor or User Private Key (colony member)
 - **Required Fields**:
   - `colonyname` (string): Name of the colony
-  - `msgtype` (string): Message type identifier
 
 ### Remove Snapshot
 - **PayloadType**: `removesnapshotmsg`
-- **Struct**: `RemoveSnapshotMsg`
+- **Credentials**: Executor or User Private Key (approved colony member)
 - **Required Fields**:
   - `colonyname` (string): Name of the colony
   - `snapshotid` (string): ID of the snapshot
   - `name` (string): Snapshot name
-  - `msgtype` (string): Message type identifier
 
 ### Remove All Snapshots
 - **PayloadType**: `removeallsnapshotmsg`
-- **Struct**: `RemoveAllSnapshotsMsg`
+- **Credentials**: Executor or User Private Key (approved colony member)
 - **Required Fields**:
   - `colonyname` (string): Name of the colony
-  - `msgtype` (string): Message type identifier
 
 ## Cluster Operations
 
@@ -745,9 +671,8 @@ Operations for managing cluster information.
 
 ### Get Cluster
 - **PayloadType**: `getclustermsg`
-- **Struct**: `GetClusterMsg`
-- **Required Fields**:
-  - `msgtype` (string): Message type identifier
+- **Credentials**: None (public endpoint)
+- **Required Fields**: None
 
 ## Workflow Operations
 
@@ -755,10 +680,9 @@ Operations for managing workflow specifications.
 
 ### Submit Workflow Spec
 - **PayloadType**: `submitworkflowspecmsg`
-- **Struct**: `SubmitWorkflowSpecMsg`
+- **Credentials**: Executor or User Private Key (approved colony member)
 - **Required Fields**:
   - `workflowspec` (*core.WorkflowSpec): Workflow specification to submit
-  - `msgtype` (string): Message type identifier
 
 ## System Operations
 
@@ -766,35 +690,32 @@ System-level operations for server management.
 
 ### Version
 - **PayloadType**: `versionmsg`
-- **Struct**: `VersionMsg`
+- **Credentials**: None (public endpoint)
 - **Required Fields**:
   - `buildversion` (string): Build version string
   - `buildtime` (string): Build timestamp
-  - `msgtype` (string): Message type identifier
 
 ### Get Server Info
 - **PayloadType**: `getserverinfomsg`
-- **Struct**: `GetServerInfoMsg`
-- **Required Fields**:
-  - `msgtype` (string): Message type identifier
+- **Credentials**: None (public endpoint)
+- **Required Fields**: None
 
 ### Get Statistics
 - **PayloadType**: `getstatisticsmsg`
-- **Struct**: `GetStatisticsMsg`
-- **Required Fields**:
-  - `msgtype` (string): Message type identifier
+- **Credentials**: Server Owner Private Key
+- **Required Fields**: None
 
 ### Change Server ID
 - **PayloadType**: `changeserveridmsg`
-- **Struct**: `ChangeServerIDMsg`
+- **Credentials**: Server Owner Private Key
 - **Required Fields**:
   - `serverid` (string): New server ID
-  - `msgtype` (string): Message type identifier
 
 ## Notes
 
-- All RPC messages include a `msgtype` field that matches the PayloadType constant
+- All RPC messages use a zero-trust security model with cryptographic signatures
+- The signature is created using ECDSA and verified using signature recovery
+- Each private key generates a deterministic 64-character hexadecimal ID
+- Field names in JSON payloads follow Go's JSON marshaling conventions (typically lowercase)
 - Fields use Go type notation where `*core.Type` indicates a pointer to a core domain object
 - The actual payload is base64-encoded JSON within the RPCMsg wrapper
-- All communications are cryptographically signed for zero-trust security
-- Field names in JSON payloads follow Go's JSON marshaling conventions (typically lowercase)
